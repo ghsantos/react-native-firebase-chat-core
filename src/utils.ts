@@ -102,6 +102,7 @@ export const processRoomDocument = async ({
   // type-coverage:ignore-next-line
   const updatedAt = data.updatedAt?.toMillis() ?? undefined
   const unSeenMessages = data.unseen ?? undefined
+  const blockedUsers = data.blockUsers ?? undefined
   // type-coverage:ignore-next-line
   let imageUrl = data.imageUrl ?? undefined
   let lastMessages
@@ -165,6 +166,7 @@ export const processRoomDocument = async ({
     updatedAt,
     users,
     unSeenMessages,
+    blockedUsers,
   }
 
   return room

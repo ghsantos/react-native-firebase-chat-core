@@ -104,6 +104,7 @@ export interface Room {
   updatedAt?: number
   users: User[]
   unSeenMessages?: Record<string, any>
+  blockedUsers?: string[]
 }
 
 export interface User {
