@@ -2,7 +2,7 @@ import { FirebaseAuthTypes } from '@react-native-firebase/auth'
 import firestore from '@react-native-firebase/firestore'
 import * as React from 'react'
 
-import { ROOMS_COLLECTION_NAME } from '.'
+import { ROOMS_COLLECTION_NAME } from './utils'
 import { Room, User } from './types'
 import { useFirebaseUser } from './useFirebaseUser'
 import { fetchUser, processRoomsQuery } from './utils'

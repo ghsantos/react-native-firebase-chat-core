@@ -1,14 +1,14 @@
 import firestore from '@react-native-firebase/firestore'
 import * as React from 'react'
 
-import { ROOMS_COLLECTION_NAME } from '.'
+import { ROOMS_COLLECTION_NAME } from './utils'
 import { Room } from './types'
 import { useFirebaseUser } from './useFirebaseUser'
 import { processRoomDocument } from './utils'
 
 /** Returns a stream of changes in a room from Firebase */
 export const useRoom = (initialRoom: Room) => {
-  const [room, setRoom] = React.useState(initialRoom ?? "")
+  const [room, setRoom] = React.useState(initialRoom ?? '')
   const { firebaseUser } = useFirebaseUser()
 
   React.useEffect(() => {
