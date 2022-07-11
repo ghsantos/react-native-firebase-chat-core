@@ -152,7 +152,7 @@ if(!firebaseUser && currentFirebaseUser){
       type: 'direct',
       users,
     } as Room
-}else if(firebaseUser && !currentFirebaseUser){
+}else if((firebaseUser && !currentFirebaseUser) || (firebaseUser && firebaseUser)){
   const query = await firestore()
       .collection(ROOMS_COLLECTION_NAME)
       .where(
