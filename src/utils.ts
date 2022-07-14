@@ -89,12 +89,8 @@ export const processRoomDocument = async ({
   firebaseUser,
 }: {
   doc:
-    | FirebaseFirestoreTypes.DocumentSnapshot<
-        FirebaseFirestoreTypes.DocumentData
-      >
-    | FirebaseFirestoreTypes.QueryDocumentSnapshot<
-        FirebaseFirestoreTypes.DocumentData
-      >
+    | FirebaseFirestoreTypes.DocumentSnapshot<FirebaseFirestoreTypes.DocumentData>
+    | FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>
   firebaseUser: FirebaseAuthTypes.User
 }) => {
   const data = doc.data()!
