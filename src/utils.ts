@@ -76,7 +76,7 @@ export const processRoomsQuery = async ({
   firebaseUser: FirebaseAuthTypes.User
   query: FirebaseFirestoreTypes.QuerySnapshot
 }) => {
-  const promises = query?.docs?.map(async (doc) =>
+  const promises = query.docs.map(async (doc) =>
     processRoomDocument({ doc, firebaseUser })
   )
 
@@ -89,12 +89,8 @@ export const processRoomDocument = async ({
   firebaseUser,
 }: {
   doc:
-    | FirebaseFirestoreTypes.DocumentSnapshot<
-        FirebaseFirestoreTypes.DocumentData
-      >
-    | FirebaseFirestoreTypes.QueryDocumentSnapshot<
-        FirebaseFirestoreTypes.DocumentData
-      >
+    | FirebaseFirestoreTypes.DocumentSnapshot<FirebaseFirestoreTypes.DocumentData>
+    | FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>
   firebaseUser: FirebaseAuthTypes.User
 }) => {
   const data = doc.data()!
