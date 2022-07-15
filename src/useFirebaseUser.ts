@@ -6,16 +6,10 @@ export const useFirebaseUser = () => {
     FirebaseAuthTypes.User | undefined
   >()
 
-
   React.useEffect(() => {
-
-    const subscriber = auth().onAuthStateChanged((user) => {
-      if(user){
-        setFirebaseUser(user);
-      }
+    return auth().onAuthStateChanged((user) => {
+      setFirebaseUser(user ?? undefined)
     })
-
-    return subscriber;
   })
 
   return { firebaseUser }
