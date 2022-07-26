@@ -144,6 +144,7 @@ if(!firebaseUser && currentFirebaseUser){
         updatedAt: firestore.FieldValue.serverTimestamp(),
         userIds: users.map((u) => u.id),
         unseen: users.reduce((prev, curr) => ({ ...prev, [curr.id]: 0 }), {}),
+        metadata
       })
 
     return {
