@@ -16,13 +16,13 @@ export const useMessages = (room: Room) => {
       .onSnapshot((query) => {
         const newMessages: MessageType.Any[] = []
 
-        query.forEach((doc) => {
+        query?.forEach((doc) => {
           // Ignore `authorId`, `createdAt` and `updatedAt` types here, not provided by the Firebase library
           // type-coverage:ignore-next-line
           const { authorId, createdAt, updatedAt, ...rest } = doc.data()
 
           // type-coverage:ignore-next-line
-          const author = room.users.find((u) => u.id === authorId) ?? {
+          const author = room?.users?.find((u) => u.id === authorId) ?? {
             id: authorId as string,
           }
 

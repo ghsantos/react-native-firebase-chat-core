@@ -100,9 +100,11 @@ export interface Room {
   lastMessages?: MessageType.Any[]
   metadata?: Record<string, any>
   name?: string
-  type: 'channel' | 'direct' | 'group' | 'unsupported'
+  type: 'channel' | 'direct' | 'group' | 'unsupported' | 'broadcast'
   updatedAt?: number
   users: User[]
+  unSeenMessages?: Record<string, any>
+  blockedUsers?: string[]
 }
 
 export interface User {

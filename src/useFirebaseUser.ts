@@ -7,9 +7,25 @@ export const useFirebaseUser = () => {
   >()
 
   React.useEffect(() => {
-    return auth().onAuthStateChanged((user) => {
-      setFirebaseUser(user ?? undefined)
+    const unlisten = auth().onAuthStateChanged((user) => {
+      user ? setFirebaseUser(user) : setFirebaseUser(undefined)
     })
+    return () => {
+      unlisten();
+    }
+    // const unlisten = auth().onAuthStateChanged(
+    //     authUser => {
+    //       authUser
+    //         ? setFirebaseUser(authUser);
+    //         : setFirebaseUser(undefined);
+    //     },
+    //  );
+    //  return () => {
+    //      unlisten();
+    //  }
+    // return auth().onAuthStateChanged((user) => {
+    //   setFirebaseUser(user ?? undefined)
+    // })
   })
 
   return { firebaseUser }
