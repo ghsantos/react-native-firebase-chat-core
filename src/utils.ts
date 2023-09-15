@@ -1,7 +1,15 @@
-import { FirebaseAuthTypes } from '@react-native-firebase/auth'
-import firestore, {
-  FirebaseFirestoreTypes,
-} from '@react-native-firebase/firestore'
+import {
+  doc,
+  DocumentData,
+  DocumentSnapshot,
+  Firestore,
+  getDoc,
+  QueryDocumentSnapshot,
+  QuerySnapshot,
+  setDoc,
+  Timestamp,
+} from 'firebase/firestore'
+import { User as FirebaseUser } from 'firebase/auth'
 
 import { FirebaseChatCoreConfig, Room, User } from './types'
 
@@ -16,32 +24,25 @@ export const setConfig = (config: FirebaseChatCoreConfig) => {
 }
 
 /** Creates {@link User} in Firebase to store name and avatar used on rooms list */
-export const createUserInFirestore = async (user: User) => {
+export const createUserInFirestore = async (db: Firestore, user: User) => {
   const { id, ...rest } = user
-  await firestore()
-    .collection(USERS_COLLECTION_NAME)
-    .doc(id)
-    .set({
-      ...rest,
-      createdAt: firestore.FieldValue.serverTimestamp(),
-      updatedAt: firestore.FieldValue.serverTimestamp(),
-      lastSeen: firestore.FieldValue.serverTimestamp(),
-    })
-}
 
-/** Removes {@link User} from `users` collection in Firebase */
-export const deleteUserFromFirestore = async (userId: string) => {
-  await firestore().collection(USERS_COLLECTION_NAME).doc(userId).delete()
+  const docRef = doc(db, USERS_COLLECTION_NAME, id)
+
+  await setDoc(docRef, {
+    ...rest,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+    lastSeen: Timestamp.now(),
+  })
 }
 
 /** Fetches user from Firebase and returns a promise */
-export const fetchUser = async (userId: string, role?: User['role']) => {
-  const doc = await firestore()
-    .collection(USERS_COLLECTION_NAME)
-    .doc(userId)
-    .get()
+export const fetchUser = async (userId: string, db: Firestore) => {
+  const docRef = doc(db, USERS_COLLECTION_NAME, userId)
+  const docSnap = await getDoc(docRef)
 
-  const data = doc.data()!
+  const data = docSnap.data()!
 
   const user: User = {
     // Ignore types here, not provided by the Firebase library
@@ -49,7 +50,7 @@ export const fetchUser = async (userId: string, role?: User['role']) => {
     createdAt: data?.createdAt?.toMillis() ?? undefined,
     // type-coverage:ignore-next-line
     firstName: data?.firstName ?? undefined,
-    id: doc?.id,
+    id: docSnap?.id,
     // type-coverage:ignore-next-line
     imageUrl: data?.imageUrl ?? undefined,
     // type-coverage:ignore-next-line
@@ -69,30 +70,34 @@ export const fetchUser = async (userId: string, role?: User['role']) => {
 
 /** Returns an array of {@link Room}s created from Firebase query.
  * If room has 2 participants, sets correct room name and image. */
-export const processRoomsQuery = async ({
-  firebaseUser,
-  query,
-}: {
-  firebaseUser: FirebaseAuthTypes.User
-  query: FirebaseFirestoreTypes.QuerySnapshot
-}) => {
+export const processRoomsQuery = async (
+  {
+    firebaseUser,
+    query,
+  }: {
+    firebaseUser: FirebaseUser
+    query: QuerySnapshot
+  },
+  db: Firestore
+) => {
   const promises = query.docs.map(async (doc) =>
-    processRoomDocument({ doc, firebaseUser })
+    processRoomDocument({ doc, firebaseUser }, db)
   )
 
   return await Promise.all(promises)
 }
 
 /** Returns a {@link Room} created from Firebase document */
-export const processRoomDocument = async ({
-  doc,
-  firebaseUser,
-}: {
-  doc:
-    | FirebaseFirestoreTypes.DocumentSnapshot<FirebaseFirestoreTypes.DocumentData>
-    | FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>
-  firebaseUser: FirebaseAuthTypes.User
-}) => {
+export const processRoomDocument = async (
+  {
+    doc,
+    firebaseUser,
+  }: {
+    doc: DocumentSnapshot<DocumentData> | QueryDocumentSnapshot<DocumentData>
+    firebaseUser: FirebaseUser
+  },
+  db: Firestore
+) => {
   const data = doc.data()!
 
   // Ignore types here, not provided by the Firebase library
@@ -101,7 +106,9 @@ export const processRoomDocument = async ({
   const id = doc.id
   // type-coverage:ignore-next-line
   const updatedAt = data.updatedAt?.toMillis() ?? undefined
+  // type-coverage:ignore-next-line
   const unSeenMessages = data.unseen ?? undefined
+  // type-coverage:ignore-next-line
   const blockedUsers = data.blockUsers ?? undefined
   // type-coverage:ignore-next-line
   let imageUrl = data.imageUrl ?? undefined
@@ -119,7 +126,7 @@ export const processRoomDocument = async ({
     (data.userRoles as Record<string, User['role']>) ?? undefined
 
   const users = await Promise.all(
-    userIds.map((userId) => fetchUser(userId, userRoles?.[userId]))
+    userIds.map((userId) => fetchUser(userId, db))
   )
 
   if (type === 'direct') {

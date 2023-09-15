@@ -1,28 +1,32 @@
-import firestore from '@react-native-firebase/firestore'
-import * as React from 'react'
+import { useEffect, useState } from 'react'
+import { Auth } from 'firebase/auth'
+import { doc, Firestore, onSnapshot } from 'firebase/firestore'
 
-import { ROOMS_COLLECTION_NAME } from './utils'
 import { Room } from './types'
 import { useFirebaseUser } from './useFirebaseUser'
-import { processRoomDocument } from './utils'
+import { ROOMS_COLLECTION_NAME, processRoomDocument } from './utils'
 
 /** Returns a stream of changes in a room from Firebase */
-export const useRoom = (initialRoom: Room) => {
-  const [room, setRoom] = React.useState(initialRoom ?? '')
-  const { firebaseUser } = useFirebaseUser()
+export const useRoom = (initialRoom: Room, auth: Auth, db: Firestore) => {
+  const [room, setRoom] = useState(initialRoom ?? {})
+  const { firebaseUser } = useFirebaseUser(auth)
 
-  React.useEffect(() => {
-    if (!firebaseUser) return
+  useEffect(() => {
+    if (!firebaseUser) {
+      return
+    }
 
-    return firestore()
-      .collection(ROOMS_COLLECTION_NAME)
-      .doc(initialRoom?.id)
-      .onSnapshot(async (doc) => {
-        const newRoom = await processRoomDocument({ doc, firebaseUser })
+    const docRef = doc(db, ROOMS_COLLECTION_NAME, initialRoom?.id)
 
-        setRoom(newRoom)
-      })
-  }, [firebaseUser, initialRoom?.id])
+    return onSnapshot(docRef, async (document) => {
+      const newRoom = await processRoomDocument(
+        { doc: document, firebaseUser },
+        db
+      )
+
+      setRoom(newRoom)
+    })
+  }, [firebaseUser, initialRoom?.id, db])
 
   return { room }
 }

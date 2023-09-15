@@ -1,32 +1,17 @@
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth'
-import * as React from 'react'
+import { useEffect, useState } from 'react'
+import { Auth, onAuthStateChanged, User } from 'firebase/auth'
 
-export const useFirebaseUser = () => {
-  const [firebaseUser, setFirebaseUser] = React.useState<
-    FirebaseAuthTypes.User | undefined
-  >()
+export const useFirebaseUser = (auth: Auth) => {
+  const [firebaseUser, setFirebaseUser] = useState<User | undefined>()
 
-  React.useEffect(() => {
-    const unlisten = auth().onAuthStateChanged((user) => {
+  useEffect(() => {
+    const unlisten = onAuthStateChanged(auth, (user) => {
       user ? setFirebaseUser(user) : setFirebaseUser(undefined)
     })
     return () => {
-      unlisten();
+      unlisten()
     }
-    // const unlisten = auth().onAuthStateChanged(
-    //     authUser => {
-    //       authUser
-    //         ? setFirebaseUser(authUser);
-    //         : setFirebaseUser(undefined);
-    //     },
-    //  );
-    //  return () => {
-    //      unlisten();
-    //  }
-    // return auth().onAuthStateChanged((user) => {
-    //   setFirebaseUser(user ?? undefined)
-    // })
-  })
+  }, [auth])
 
   return { firebaseUser }
 }

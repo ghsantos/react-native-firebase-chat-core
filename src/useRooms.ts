@@ -1,11 +1,19 @@
-import { FirebaseAuthTypes } from '@react-native-firebase/auth'
-import firestore from '@react-native-firebase/firestore'
-import * as React from 'react'
+import { useState, useEffect } from 'react'
+import { Auth, User as FirebaseUser } from 'firebase/auth'
+import {
+  Firestore,
+  Timestamp,
+  addDoc,
+  collection,
+  getDocs,
+  onSnapshot,
+  query,
+  where,
+} from 'firebase/firestore'
 
-import { ROOMS_COLLECTION_NAME } from './utils'
 import { Room, User } from './types'
 import { useFirebaseUser } from './useFirebaseUser'
-import { fetchUser, processRoomsQuery } from './utils'
+import { ROOMS_COLLECTION_NAME, fetchUser, processRoomsQuery } from './utils'
 
 /** Returns a stream of rooms from Firebase. Only rooms where current
  * logged in user exist are returned. `orderByUpdatedAt` is used in case
@@ -17,31 +25,34 @@ import { fetchUser, processRoomsQuery } from './utils'
  * 3) Create an Index (Firestore Database -> Indexes tab) where collection ID
  * is `rooms`, field indexed are `userIds` (type Arrays) and `updatedAt`
  * (type Descending), query scope is `Collection` */
-export const useRooms = (orderByUpdatedAt?: boolean) => {
-  const [rooms, setRooms] = React.useState<Room[]>([])
-  const { firebaseUser } = useFirebaseUser()
+export const useRooms = (
+  auth: Auth,
+  db: Firestore,
+  orderByUpdatedAt?: boolean
+) => {
+  const [rooms, setRooms] = useState<Room[]>([])
+  const { firebaseUser } = useFirebaseUser(auth)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!firebaseUser) {
       setRooms([])
       return
     }
 
-    const collection = orderByUpdatedAt
-      ? firestore()
-          .collection(ROOMS_COLLECTION_NAME)
-          .where('userIds', 'array-contains', firebaseUser.uid)
-          .orderBy('updatedAt', 'desc')
-      : firestore()
-          .collection(ROOMS_COLLECTION_NAME)
-          .where('userIds', 'array-contains', firebaseUser.uid)
+    const roomsQuery = query(
+      collection(db, ROOMS_COLLECTION_NAME),
+      where('userIds', 'array-contains', firebaseUser.uid)
+    )
 
-    return collection.onSnapshot(async (query) => {
-      const newRooms = await processRoomsQuery({ firebaseUser, query })
+    return onSnapshot(roomsQuery, async (queryResult) => {
+      const newRooms = await processRoomsQuery(
+        { firebaseUser, query: queryResult },
+        db
+      )
 
       setRooms(newRooms)
     })
-  }, [firebaseUser, orderByUpdatedAt])
+  }, [firebaseUser, orderByUpdatedAt, db])
 
   /** Creates a chat group room with `users`. Creator is automatically
    * added to the group. `name` is required and will be used as
@@ -60,7 +71,7 @@ export const useRooms = (orderByUpdatedAt?: boolean) => {
   }) => {
     if (!firebaseUser) return
 
-    const currentUser = await fetchUser(firebaseUser.uid)
+    const currentUser = await fetchUser(firebaseUser.uid, db)
 
     let roomUsers = [currentUser].concat(users)
     roomUsers = roomUsers?.map((object) => {
@@ -69,25 +80,23 @@ export const useRooms = (orderByUpdatedAt?: boolean) => {
       }
       return object
     })
-    const room = await firestore()
-      .collection(ROOMS_COLLECTION_NAME)
-      .add({
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        imageUrl,
-        metadata,
-        name,
-        type: 'group',
-        updatedAt: firestore.FieldValue.serverTimestamp(),
-        userIds: roomUsers.map((u) => u.id),
-        unseen: roomUsers.reduce(
-          (prev, curr) => ({ ...prev, [curr.id]: 0 }),
-          {}
-        ),
-        userRoles: roomUsers.reduce(
-          (prev, curr) => ({ ...prev, [curr.id]: curr.role ?? 'user' }),
-          {}
-        ),
-      })
+
+    const roomsCollection = collection(db, ROOMS_COLLECTION_NAME)
+
+    const room = await addDoc(roomsCollection, {
+      createdAt: Timestamp.now(),
+      imageUrl,
+      metadata,
+      name,
+      type: 'group',
+      updatedAt: Timestamp.now(),
+      userIds: roomUsers.map((u) => u.id),
+      unseen: roomUsers.reduce((prev, curr) => ({ ...prev, [curr.id]: 0 }), {}),
+      userRoles: roomUsers.reduce(
+        (prev, curr) => ({ ...prev, [curr.id]: curr.role ?? 'user' }),
+        {}
+      ),
+    })
 
     return {
       id: room.id,
@@ -103,19 +112,22 @@ export const useRooms = (orderByUpdatedAt?: boolean) => {
   const createRoom = async (
     otherUser: User,
     metadata?: Record<string, any>,
-    currentFirebaseUser?: FirebaseAuthTypes.User
+    currentFirebaseUser?: FirebaseUser
   ) => {
     if (!firebaseUser && !currentFirebaseUser) return
     if (!firebaseUser && currentFirebaseUser) {
-      const query = await firestore()
-        .collection(ROOMS_COLLECTION_NAME)
-        .where('userIds', 'array-contains', currentFirebaseUser?.uid)
-        .get()
+      const roomsQuery = query(
+        collection(db, ROOMS_COLLECTION_NAME),
+        where('userIds', 'array-contains', currentFirebaseUser?.uid)
+      )
+
+      const queryResult = await getDocs(roomsQuery)
 
       const allRooms = await processRoomsQuery(
         firebaseUser
-          ? { firebaseUser, query }
-          : { firebaseUser: currentFirebaseUser, query }
+          ? { firebaseUser, query: queryResult }
+          : { firebaseUser: currentFirebaseUser, query: queryResult },
+        db
       )
 
       const existingRoom = allRooms.find((room) => {
@@ -132,20 +144,20 @@ export const useRooms = (orderByUpdatedAt?: boolean) => {
         return existingRoom
       }
 
-      const currentUser = await fetchUser(currentFirebaseUser.uid)
+      const currentUser = await fetchUser(currentFirebaseUser.uid, db)
 
       const users = [currentUser].concat(otherUser)
 
-      const room = await firestore()
-        .collection(ROOMS_COLLECTION_NAME)
-        .add({
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          type: 'direct',
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-          userIds: users.map((u) => u.id),
-          unseen: users.reduce((prev, curr) => ({ ...prev, [curr.id]: 0 }), {}),
-          metadata,
-        })
+      const roomsCollection = collection(db, ROOMS_COLLECTION_NAME)
+
+      const room = await addDoc(roomsCollection, {
+        createdAt: Timestamp.now(),
+        type: 'direct',
+        updatedAt: Timestamp.now(),
+        userIds: users.map((u) => u.id),
+        unseen: users.reduce((prev, curr) => ({ ...prev, [curr.id]: 0 }), {}),
+        metadata,
+      })
 
       return {
         id: room.id,
@@ -154,12 +166,17 @@ export const useRooms = (orderByUpdatedAt?: boolean) => {
         users,
       } as Room
     } else if (firebaseUser && !currentFirebaseUser) {
-      const query = await firestore()
-        .collection(ROOMS_COLLECTION_NAME)
-        .where('userIds', 'array-contains', firebaseUser?.uid)
-        .get()
+      const roomsQuery = query(
+        collection(db, ROOMS_COLLECTION_NAME),
+        where('userIds', 'array-contains', firebaseUser?.uid)
+      )
 
-      const allRooms = await processRoomsQuery({ firebaseUser, query })
+      const queryResult = await getDocs(roomsQuery)
+
+      const allRooms = await processRoomsQuery(
+        { firebaseUser, query: queryResult },
+        db
+      )
 
       const existingRoom = allRooms.find((room) => {
         if (room.type === 'group') return false
@@ -174,20 +191,19 @@ export const useRooms = (orderByUpdatedAt?: boolean) => {
         return existingRoom
       }
 
-      const currentUser = await fetchUser(firebaseUser.uid)
+      const currentUser = await fetchUser(firebaseUser.uid, db)
 
       const users = [currentUser].concat(otherUser)
 
-      const room = await firestore()
-        .collection(ROOMS_COLLECTION_NAME)
-        .add({
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          type: 'direct',
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-          userIds: users.map((u) => u.id),
-          unseen: users.reduce((prev, curr) => ({ ...prev, [curr.id]: 0 }), {}),
-          metadata,
-        })
+      const roomsCollection = collection(db, ROOMS_COLLECTION_NAME)
+
+      const room = await addDoc(roomsCollection, {
+        createdAt: Timestamp.now(),
+        type: 'direct',
+        updatedAt: Timestamp.now(),
+        userIds: users.map((u) => u.id),
+        unseen: users.reduce((prev, curr) => ({ ...prev, [curr.id]: 0 }), {}),
+      })
 
       return {
         id: room.id,
@@ -196,12 +212,17 @@ export const useRooms = (orderByUpdatedAt?: boolean) => {
         users,
       } as Room
     } else if (firebaseUser && currentFirebaseUser) {
-      const query = await firestore()
-        .collection(ROOMS_COLLECTION_NAME)
-        .where('userIds', 'array-contains', firebaseUser?.uid)
-        .get()
+      const roomsQuery = query(
+        collection(db, ROOMS_COLLECTION_NAME),
+        where('userIds', 'array-contains', firebaseUser?.uid)
+      )
 
-      const allRooms = await processRoomsQuery({ firebaseUser, query })
+      const queryResult = await getDocs(roomsQuery)
+
+      const allRooms = await processRoomsQuery(
+        { firebaseUser, query: queryResult },
+        db
+      )
 
       const existingRoom = allRooms.find((room) => {
         if (room.type === 'group') return false
@@ -216,19 +237,19 @@ export const useRooms = (orderByUpdatedAt?: boolean) => {
         return existingRoom
       }
 
-      const currentUser = await fetchUser(firebaseUser.uid)
+      const currentUser = await fetchUser(firebaseUser.uid, db)
 
       const users = [currentUser].concat(otherUser)
 
-      const room = await firestore()
-        .collection(ROOMS_COLLECTION_NAME)
-        .add({
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          type: 'direct',
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-          userIds: users.map((u) => u.id),
-          unseen: users.reduce((prev, curr) => ({ ...prev, [curr.id]: 0 }), {}),
-        })
+      const roomsCollection = collection(db, ROOMS_COLLECTION_NAME)
+
+      const room = await addDoc(roomsCollection, {
+        createdAt: Timestamp.now(),
+        type: 'direct',
+        updatedAt: Timestamp.now(),
+        userIds: users.map((u) => u.id),
+        unseen: users.reduce((prev, curr) => ({ ...prev, [curr.id]: 0 }), {}),
+      })
 
       return {
         id: room.id,
@@ -238,26 +259,30 @@ export const useRooms = (orderByUpdatedAt?: boolean) => {
       } as Room
     }
   }
+
   const createBroadCastRoom = async (
     otherUser: User,
     metadata?: Record<string, any>,
-    currentFirebaseUser?: FirebaseAuthTypes.User
+    currentFirebaseUser?: FirebaseUser
   ) => {
     if (!firebaseUser || !currentFirebaseUser) return
 
-    const query = await firestore()
-      .collection(ROOMS_COLLECTION_NAME)
-      .where(
+    const roomsQuery = query(
+      collection(db, ROOMS_COLLECTION_NAME),
+      where(
         'userIds',
         'array-contains',
         firebaseUser.uid ?? currentFirebaseUser?.uid
       )
-      .get()
+    )
+
+    const queryResult = await getDocs(roomsQuery)
 
     const allRooms = await processRoomsQuery(
       firebaseUser
-        ? { firebaseUser, query }
-        : { firebaseUser: currentFirebaseUser, query }
+        ? { firebaseUser, query: queryResult }
+        : { firebaseUser: currentFirebaseUser, query: queryResult },
+      db
     )
 
     const existingRoom = allRooms.find((room) => {
@@ -275,20 +300,21 @@ export const useRooms = (orderByUpdatedAt?: boolean) => {
     }
 
     const currentUser = await fetchUser(
-      firebaseUser.uid ?? currentFirebaseUser.uid
+      firebaseUser.uid ?? currentFirebaseUser.uid,
+      db
     )
 
     const users = [currentUser].concat(otherUser)
 
-    const room = await firestore()
-      .collection(ROOMS_COLLECTION_NAME)
-      .add({
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        type: 'broadcast',
-        updatedAt: firestore.FieldValue.serverTimestamp(),
-        userIds: users.map((u) => u.id),
-        unseen: users.reduce((prev, curr) => ({ ...prev, [curr.id]: 0 }), {}),
-      })
+    const roomsCollection = collection(db, ROOMS_COLLECTION_NAME)
+
+    const room = await addDoc(roomsCollection, {
+      createdAt: Timestamp.now(),
+      type: 'broadcast',
+      updatedAt: Timestamp.now(),
+      userIds: users.map((u) => u.id),
+      unseen: users.reduce((prev, curr) => ({ ...prev, [curr.id]: 0 }), {}),
+    })
 
     return {
       id: room.id,
@@ -297,5 +323,6 @@ export const useRooms = (orderByUpdatedAt?: boolean) => {
       users,
     } as Room
   }
+
   return { createGroupRoom, createRoom, rooms, createBroadCastRoom }
 }

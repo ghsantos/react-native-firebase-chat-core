@@ -1,56 +1,56 @@
-import firestore from '@react-native-firebase/firestore'
-import * as React from 'react'
+import { useEffect, useState } from 'react'
+import { Auth } from 'firebase/auth'
+import { collection, Firestore, onSnapshot } from 'firebase/firestore'
 
-import { USERS_COLLECTION_NAME } from './utils'
 import { User } from './types'
 import { useFirebaseUser } from './useFirebaseUser'
+import { USERS_COLLECTION_NAME } from './utils'
 
-/** Returns a stream of all users from Firebase */
-export const useUsers = () => {
-  const [users, setUsers] = React.useState<User[]>([])
-  const { firebaseUser } = useFirebaseUser()
+export const useUsers = (auth: Auth, db: Firestore) => {
+  const [users, setUsers] = useState<User[]>([])
+  const { firebaseUser } = useFirebaseUser(auth)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!firebaseUser) {
       setUsers([])
       return
     }
 
-    return firestore()
-      .collection(USERS_COLLECTION_NAME)
-      .onSnapshot((query) => {
-        const newUsers: User[] = []
+    const usersCollection = collection(db, USERS_COLLECTION_NAME)
 
-        query?.forEach((doc) => {
-          if (firebaseUser.uid === doc.id) return
+    return onSnapshot(usersCollection, (query) => {
+      const newUsers: User[] = []
 
-          const data = doc.data()!
+      query?.forEach((doc) => {
+        if (firebaseUser.uid === doc.id) return
 
-          const user: User = {
-            // Ignore types here, not provided by the Firebase library
-            // type-coverage:ignore-next-line
-            createdAt: data.createdAt?.toMillis() ?? undefined,
-            // type-coverage:ignore-next-line
-            firstName: data.firstName ?? undefined,
-            id: doc.id,
-            // type-coverage:ignore-next-line
-            imageUrl: data.imageUrl ?? undefined,
-            // type-coverage:ignore-next-line
-            lastName: data.lastName ?? undefined,
-            // type-coverage:ignore-next-line
-            lastSeen: data.lastSeen?.toMillis() ?? undefined,
-            // type-coverage:ignore-next-line
-            metadata: data.metadata ?? undefined,
-            // type-coverage:ignore-next-line
-            updatedAt: data.updatedAt?.toMillis() ?? undefined,
-          }
+        const data = doc.data()!
 
-          newUsers.push(user)
-        })
+        const user: User = {
+          // Ignore types here, not provided by the Firebase library
+          // type-coverage:ignore-next-line
+          createdAt: data.createdAt?.toMillis() ?? undefined,
+          // type-coverage:ignore-next-line
+          firstName: data.firstName ?? undefined,
+          id: doc.id,
+          // type-coverage:ignore-next-line
+          imageUrl: data.imageUrl ?? undefined,
+          // type-coverage:ignore-next-line
+          lastName: data.lastName ?? undefined,
+          // type-coverage:ignore-next-line
+          lastSeen: data.lastSeen?.toMillis() ?? undefined,
+          // type-coverage:ignore-next-line
+          metadata: data.metadata ?? undefined,
+          // type-coverage:ignore-next-line
+          updatedAt: data.updatedAt?.toMillis() ?? undefined,
+        }
 
-        setUsers(newUsers)
+        newUsers.push(user)
       })
-  }, [firebaseUser])
+
+      setUsers(newUsers)
+    })
+  }, [firebaseUser, db])
 
   return { users }
 }
