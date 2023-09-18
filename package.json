@@ -37,23 +37,23 @@
     "type-coverage": "type-coverage"
   },
   "devDependencies": {
-    "@babel/core": "^7.15.8",
-    "@babel/runtime": "^7.15.4",
+    "@babel/core": "^7.20.0",
+    "@babel/runtime": "^7.20.0",
     "@react-native-community/eslint-config": "^3.0.1",
     "@types/jest": "^27.0.2",
-    "@types/react-native": "^0.66.0",
-    "@types/react-test-renderer": "^17.0.1",
+    "@types/react-native": "^0.72.2",
+    "@types/react-test-renderer": "^18.0.0",
     "babel-jest": "^27.3.1",
     "eslint": "^7.32.0",
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "firebase": "^10.4.0",
     "jest": "^27.3.1",
-    "metro-react-native-babel-preset": "^0.66.2",
-    "react": "^17.0.2",
-    "react-native": "^0.66.1",
-    "react-test-renderer": "^17.0.2",
+    "metro-react-native-babel-preset": "0.76.8",
+    "react": "18.2.0",
+    "react-native": "0.72.4",
+    "react-test-renderer": "18.2.0",
     "type-coverage": "^2.18.2",
-    "typescript": "^4.4.4"
+    "typescript": "4.8.4"
   },
   "peerDependencies": {
     "firebase": "*",
