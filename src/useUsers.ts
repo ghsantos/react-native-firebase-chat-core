@@ -1,4 +1,4 @@
-import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore'
+import firestore from '@react-native-firebase/firestore'
 import * as React from 'react'
 
 import { USERS_COLLECTION_NAME } from '.'
