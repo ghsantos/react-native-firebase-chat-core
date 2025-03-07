@@ -19,12 +19,12 @@ export const setConfig = (config: FirebaseChatCoreConfig) => {
 export const createUserInFirestore = async (user: User) => {
   await firestore().collection(USERS_COLLECTION_NAME).doc(user.id).set({
     createdAt: firestore.FieldValue.serverTimestamp(),
-    firstName: user.firstName,
-    imageUrl: user.imageUrl,
-    lastName: user.lastName,
-    lastSeen: user.lastSeen,
-    metadata: user.metadata,
-    role: user.role,
+    firstName: user.firstName || "",
+    imageUrl: user.imageUrl || "",
+    lastName: user.lastName || "",
+    lastSeen: user.lastSeen || "",
+    metadata: user.metadata || "",
+    role: user.role || "",
     updatedAt: firestore.FieldValue.serverTimestamp(),
   })
 }
