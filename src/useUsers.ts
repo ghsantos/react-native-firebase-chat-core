@@ -1,4 +1,4 @@
-import firestore from '@react-native-firebase/firestore'
+import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore'
 import * as React from 'react'
 
 import { USERS_COLLECTION_NAME } from '.'
@@ -29,7 +29,7 @@ export const useUsers = () => {
           const user: User = {
             // Ignore types here, not provided by the Firebase library
             // type-coverage:ignore-next-line
-            createdAt: data.createdAt?.toMillis() ?? undefined,
+            createdAt: data.createdAt?.toDate() ?? undefined,
             // type-coverage:ignore-next-line
             firstName: data.firstName ?? undefined,
             id: doc.id,
@@ -38,11 +38,11 @@ export const useUsers = () => {
             // type-coverage:ignore-next-line
             lastName: data.lastName ?? undefined,
             // type-coverage:ignore-next-line
-            lastSeen: data.lastSeen?.toMillis() ?? undefined,
+            lastSeen: data.lastSeen?.toDate() ?? undefined,
             // type-coverage:ignore-next-line
             metadata: data.metadata ?? undefined,
             // type-coverage:ignore-next-line
-            updatedAt: data.updatedAt?.toMillis() ?? undefined,
+            updatedAt: data.updatedAt?.toDate() ?? undefined,
           }
 
           newUsers.push(user)
