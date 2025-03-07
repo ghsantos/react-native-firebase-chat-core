@@ -49,7 +49,7 @@ export const fetchUser = async (userId: string, role?: User['role']) => {
   const user: User = {
     // Ignore types here, not provided by the Firebase library
     // type-coverage:ignore-next-line
-    createdAt: data.createdAt?.toMillis() ?? undefined,
+    createdAt: data.createdAt?.toDate() ?? undefined,
     // type-coverage:ignore-next-line
     firstName: data.firstName ?? undefined,
     id: doc.id,
@@ -58,12 +58,12 @@ export const fetchUser = async (userId: string, role?: User['role']) => {
     // type-coverage:ignore-next-line
     lastName: data.lastName ?? undefined,
     // type-coverage:ignore-next-line
-    lastSeen: data.lastSeen?.toMillis() ?? undefined,
+    lastSeen: data.lastSeen?.toDate() ?? undefined,
     // type-coverage:ignore-next-line
     metadata: data.metadata ?? undefined,
     role,
     // type-coverage:ignore-next-line
-    updatedAt: data.updatedAt?.toMillis() ?? undefined,
+    updatedAt: data.updatedAt?.toDate() ?? undefined,
   }
 
   return user
@@ -99,10 +99,10 @@ export const processRoomDocument = async ({
 
   // Ignore types here, not provided by the Firebase library
   // type-coverage:ignore-next-line
-  const createdAt = data.createdAt?.toMillis() ?? undefined
+  const createdAt = data.createdAt?.toDate() ?? undefined
   const id = doc.id
   // type-coverage:ignore-next-line
-  const updatedAt = data.updatedAt?.toMillis() ?? undefined
+  const updatedAt = data.updatedAt?.toDate() ?? undefined
 
   // type-coverage:ignore-next-line
   let imageUrl = data.imageUrl ?? undefined
@@ -147,11 +147,11 @@ export const processRoomDocument = async ({
         ...(lm ?? {}),
         author,
         // type-coverage:ignore-next-line
-        createdAt: lm.createdAt?.toMillis() ?? undefined,
+        createdAt: lm.createdAt?.toDate() ?? undefined,
         // type-coverage:ignore-next-line
         id: lm.id ?? '',
         // type-coverage:ignore-next-line
-        updatedAt: lm.updatedAt?.toMillis() ?? undefined,
+        updatedAt: lm.updatedAt?.toDate() ?? undefined,
       }
     })
   }

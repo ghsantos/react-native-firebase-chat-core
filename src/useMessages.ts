@@ -30,10 +30,10 @@ export const useMessages = (room: Room) => {
             ...rest,
             author,
             // type-coverage:ignore-next-line
-            createdAt: createdAt?.toMillis() ?? undefined,
+            createdAt: createdAt?.toDate() ?? undefined,
             id: doc.id,
             // type-coverage:ignore-next-line
-            updatedAt: updatedAt?.toMillis() ?? undefined,
+            updatedAt: updatedAt?.toDate() ?? undefined,
           } as MessageType.Any)
         })
 
