@@ -61,7 +61,7 @@ export const fetchUser = async (userId: string, role?: User['role']) => {
     lastSeen: !!data.lastSeen ? data.lastSeen?.toDate() : undefined,
     // type-coverage:ignore-next-line
     metadata: data.metadata ?? undefined,
-    role,
+    role: data.role ?? undefined,
     // type-coverage:ignore-next-line
     updatedAt: data.updatedAt?.toDate() ?? undefined,
   }
