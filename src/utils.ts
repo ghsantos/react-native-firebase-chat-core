@@ -17,19 +17,28 @@ export const setConfig = (config: FirebaseChatCoreConfig) => {
 
 /** Creates {@link User} in Firebase to store name and avatar used on rooms list */
 export const createUserInFirestore = async (user: User) => {
-  await firestore()
-    .collection(USERS_COLLECTION_NAME)
-    .doc(user.id)
-    .set({
-      createdAt: firestore.FieldValue.serverTimestamp(),
-      firstName: user.firstName || '',
-      imageUrl: user.imageUrl || '',
-      lastName: user.lastName || '',
-      lastSeen: user.lastSeen || '',
-      metadata: user.metadata || '',
-      role: user.role || '',
-      updatedAt: firestore.FieldValue.serverTimestamp(),
-    })
+  await firestore().collection(USERS_COLLECTION_NAME).doc(user.id).set({
+    createdAt: firestore.FieldValue.serverTimestamp(),
+    firstName: user.firstName,
+    imageUrl: user.imageUrl,
+    lastName: user.lastName,
+    lastSeen: user.lastSeen,
+    metadata: user.metadata,
+    role: user.role,
+    updatedAt: firestore.FieldValue.serverTimestamp(),
+  })
+}
+
+/** Update {@link User} in Firebase */
+export const updateUserInFirestore = async (user: User) => {
+  await firestore().collection(USERS_COLLECTION_NAME).doc(user.id).update({
+    firstName: user.firstName,
+    imageUrl: user.imageUrl,
+    lastName: user.lastName,
+    lastSeen: user.lastSeen,
+    metadata: user.metadata,
+    updatedAt: firestore.FieldValue.serverTimestamp(),
+  })
 }
 
 /** Removes {@link User} from `users` collection in Firebase */
@@ -38,7 +47,7 @@ export const deleteUserFromFirestore = async (userId: string) => {
 }
 
 /** Fetches user from Firebase and returns a promise */
-export const fetchUser = async (userId: string, role?: User['role']) => {
+export const fetchUser = async (userId: string) => {
   const doc = await firestore()
     .collection(USERS_COLLECTION_NAME)
     .doc(userId)
