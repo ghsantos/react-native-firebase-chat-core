@@ -124,13 +124,11 @@ export const processRoomDocument = async ({
   const type = data.type as Room['type']
   // type-coverage:ignore-next-line
   const userIds = data.userIds as string[]
-  const userRoles =
-    // type-coverage:ignore-next-line
-    (data.userRoles as Record<string, User['role']>) ?? undefined
+  // const userRoles =
+  //   // type-coverage:ignore-next-line
+  //   (data.userRoles as Record<string, User['role']>) ?? undefined
 
-  const users = await Promise.all(
-    userIds.map((userId) => fetchUser(userId, userRoles?.[userId]))
-  )
+  const users = await Promise.all(userIds.map((userId) => fetchUser(userId)))
 
   if (type === 'direct') {
     const otherUser = users.find((u) => u.id !== firebaseUser.uid)
