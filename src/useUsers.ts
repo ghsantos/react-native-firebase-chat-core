@@ -42,6 +42,8 @@ export const useUsers = () => {
             // type-coverage:ignore-next-line
             metadata: data.metadata ?? undefined,
             // type-coverage:ignore-next-line
+            role: data.role ?? undefined,
+            // type-coverage:ignore-next-line
             updatedAt: data.updatedAt?.toDate() ?? undefined,
           }
 
