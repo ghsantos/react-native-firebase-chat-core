@@ -11,18 +11,13 @@ export const useUsers = () => {
   const { firebaseUser } = useFirebaseUser()
 
   React.useEffect(() => {
-    if (!firebaseUser) {
-      setUsers([])
-      return
-    }
-
     return firestore()
       .collection(USERS_COLLECTION_NAME)
       .onSnapshot((query) => {
         const newUsers: User[] = []
 
         query?.forEach((doc) => {
-          if (firebaseUser.uid === doc.id) return
+          if (firebaseUser?.uid === doc.id) return
 
           const data = doc.data()!
 
